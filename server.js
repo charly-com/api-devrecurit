@@ -28,7 +28,6 @@ app.get("/", (req, res) => {
   res.send("Welcome to your Express server!");
 });
 
-// Define your authentication routes here (signup, signin, etc.)
 
 // Start the server
 app.listen(port, () => {

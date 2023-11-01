@@ -1,6 +1,6 @@
 import User from "../models/userModel.js";
 import bcrypt from "bcryptjs";
-const { v4: uuidv4 } = require("uuid");
+import  { v4 as uuidv4 } from "uuid";
 import transporter from "../utils/mail.js";
 import { generateUsersToken, generateRefreshToken, verifyRefreshToken } from "../utils/generateUsersToken.js";
 
