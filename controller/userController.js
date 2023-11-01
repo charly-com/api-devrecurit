@@ -2,7 +2,7 @@ import User from "../models/userModel.js";
 import bcrypt from "bcryptjs";
 const { v4: uuidv4 } = require("uuid");
 import transporter from "../utils/mail.js";
-import { generateUsersToken } from "../utils/generateUsersToken.js";
+import { generateUsersToken, generateRefreshToken, verifyRefreshToken } from "../utils/generateUsersToken.js";
 
 export const signup = async (req, res) => {
   try {
@@ -46,7 +46,7 @@ export const signup = async (req, res) => {
 
 export const verifyUser = async (req, res) => {
   try {
-    const { userId, otp } = req.body; // Expect userId instead of email
+    const { userId, otp } = req.body; 
 
     const user = await User.findById(userId);
 
@@ -88,8 +88,14 @@ export const login = async (req, res) => {
       return res.status(401).json({ error: "Invalid password" });
     }
 
+    // Generate and store the refresh token
+    const refreshToken = generateRefreshToken({ id: user.id, email: user.email });
+    user.refreshToken = refreshToken;
+    await user.save();
+
     // Generate and return a token upon successful login
-    const token = generateUsersToken(user.id, user.email);
+    const userData = { id: user.id, email: user.email };
+    const token = generateUsersToken(userData);
 
     res.status(200).json({
       id: user.id,
@@ -170,3 +176,16 @@ export const resetPassword = async (req, res) => {
     res.status(500).json({ error: "Password reset failed" });
   }
 };
+
+
+export const refreshToken = async (req, res) => {
+    const { refreshToken } = req.body;
+    try {
+      const decoded = verifyRefreshToken(refreshToken);
+      // If verification is successful, issue a new access token
+      const newAccessToken = generateUsersToken(decoded);
+      res.status(200).json({ accessToken: newAccessToken });
+    } catch (error) {
+      res.status(401).json({ error: "Invalid or expired refresh token" });
+    }
+  };
