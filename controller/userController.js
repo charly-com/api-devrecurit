@@ -14,9 +14,11 @@ export const signup = async (req, res) => {
       email: req.body.email,
       role: req.body.role,
       password: hashedPassword,
+      otp: otp,
     });
 
-    // Send the OTP to the user's email
+    const token = generateUsersToken({ id: newUser.id, email: newUser.email });
+
     const mailOptions = {
       from: "devcharles40@gmail.com",
       to: req.body.email,
@@ -34,6 +36,7 @@ export const signup = async (req, res) => {
           id: newUser.id,
           username: newUser.username,
           email: newUser.email,
+          token: token,
           message: "OTP sent to your email for verification.",
         });
       }
@@ -45,30 +48,33 @@ export const signup = async (req, res) => {
 };
 
 export const verifyUser = async (req, res) => {
-  try {
-    const { userId, otp } = req.body; 
-
-    const user = await User.findById(userId);
-
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
+    try {
+      const { userId, otp } = req.body;
+  
+      const user = await User.findById(userId);
+  
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+  
+      if (otp !== user.otp) {
+        return res.status(401).json({ error: "Invalid OTP" });
+      }
+  
+      user.isVerified = true;
+  
+      user.otp = null;
+      await user.save();
+  
+      const username = user.username; 
+  
+      res.status(200).json({ message: "User successfully verified", username }); 
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Verification failed" });
     }
-
-    if (otp !== user.otp) {
-      return res.status(401).json({ error: "Invalid OTP" });
-    }
-
-    user.isVerified = true;
-
-    user.otp = null;
-    await user.save();
-
-    res.status(200).json({ message: "User successfully verified" });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Verification failed" });
-  }
-};
+  };
+  
 
 export const login = async (req, res) => {
   try {
